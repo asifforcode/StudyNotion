@@ -35,7 +35,7 @@ app.use(
 	})
 )
 //cloudinary connection
-cloudinaryConnect();
+cloudinaryConnect()
 
 //routes
 app.use("/api/v1/auth", userRoutes);
