@@ -8,8 +8,7 @@ const { passwordUpdated } = require("../mail/templates/passwordUpdate")
 const Profile = require("../models/Profile")
 require("dotenv").config()
 
-// Signup Controller for Registering USers
-
+// Signup Controller for Registering Users
 exports.signup = async (req, res) => {
   try {
     // Destructure fields from the request body
@@ -22,7 +21,8 @@ exports.signup = async (req, res) => {
       accountType,
       contactNumber,
       otp,
-    } = req.body
+    } = req.body;
+
     // Check if All Details are there or not
     if (
       !firstName ||
@@ -35,49 +35,51 @@ exports.signup = async (req, res) => {
       return res.status(403).send({
         success: false,
         message: "All Fields are required",
-      })
+      });
     }
+
+    //  detect fake email using regex
+    const fakeEmailPattern = /(test|fake|blank|example)/i;
+    if (fakeEmailPattern.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please use a valid personal or work email address.",
+      });
+    }
+
     // Check if password and confirm password match
     if (password !== confirmPassword) {
       return res.status(400).json({
         success: false,
         message:
           "Password and Confirm Password do not match. Please try again.",
-      })
+      });
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email })
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({
         success: false,
         message: "User already exists. Please sign in to continue.",
-      })
+      });
     }
 
     // Find the most recent OTP for the email
-    const response = await OTP.find({ email }).sort({ createdAt: -1 }).limit(1)
-    console.log(response)
-    if (response.length === 0) {
-      // OTP not found for the email
+    const response = await OTP.find({ email }).sort({ createdAt: -1 }).limit(1);
+    if (response.length === 0 || otp !== response[0].otp) {
       return res.status(400).json({
         success: false,
         message: "The OTP is not valid",
-      })
-    } else if (otp !== response[0].otp) {
-      // Invalid OTP
-      return res.status(400).json({
-        success: false,
-        message: "The OTP is not valid",
-      })
+      });
     }
 
     // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10)
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create the user
-    let approved = ""
-    approved === "Instructor" ? (approved = false) : (approved = true)
+    let approved = "";
+    approved === "Instructor" ? (approved = false) : (approved = true);
 
     // Create the Additional Profile For User
     const profileDetails = await Profile.create({
@@ -85,7 +87,8 @@ exports.signup = async (req, res) => {
       dateOfBirth: null,
       about: null,
       contactNumber: null,
-    })
+    });
+
     const user = await User.create({
       firstName,
       lastName,
@@ -96,21 +99,21 @@ exports.signup = async (req, res) => {
       approved: approved,
       additionalDetails: profileDetails._id,
       image: "",
-    })
+    });
 
     return res.status(200).json({
       success: true,
       user,
       message: "User registered successfully",
-    })
+    });
   } catch (error) {
-    console.error(error)
+    console.error(error);
     return res.status(500).json({
       success: false,
       message: "User cannot be registered. Please try again.",
-    })
+    });
   }
-}
+};
 
 // Login controller for authenticating users
 exports.login = async (req, res) => {
